@@ -1,144 +1,238 @@
-# AUDIS
+# 🎙️ AUDIS
 
-**Audio Delivery and Interactive Service** - A C# SIP-based voice service that provides an interactive voice menu system with real-time TTS.
+A professional SIP-based voice automation service for Windows that responds to incoming calls with DTMF-triggered audio playback, real-time weather information, and text-to-speech announcements in Czech language.
 
-## Overview
+![.NET](https://img.shields.io/badge/.NET-8.0-blue)
+![Platform](https://img.shields.io/badge/platform-Windows-lightgrey)
+![License](https://img.shields.io/badge/license-MIT-green)
 
-AUDIS is a SIP (Session Initiation Protocol) voice service built with .NET that answers incoming calls and provides an interactive menu system. Users can navigate through audio options using DTMF (touch-tone) inputs and receive real-time weather updates via text-to-speech.
+## 📋 Overview
 
-## Features
+Audis Service is a WPF-based desktop application that acts as a SIP user agent, automatically answering incoming VoIP calls and playing custom audio files based on DTMF (touch-tone) input. It features a modern management console with real-time call monitoring, system tray integration, and dynamic configuration.
 
-- **SIP Call Handling** - Accepts and manages incoming SIP calls on UDP port 5060
-- **Interactive Voice Menu** - Navigate through pre-recorded audio files using keypad input
-- **Real-Time Weather** - Fetches current weather for Czech Republic via Open-Meteo API
-- **Text-to-Speech** - Converts weather data to Czech-language speech using Google TTS
-- **DTMF Detection** - Robust dual-mode DTMF tone detection (UA events + RTP packet parsing)
-- **Stable Audio Playback** - Precise 20ms-interval RTP streaming optimized for legacy hardware
+### Key Features
 
-## Menu Options
+- ✅ **SIP Protocol Support** - Full VoIP call handling via SIPSorcery
+- 🎹 **DTMF Recognition** - Responds to telephone keypad inputs (0-9, *, #)
+- 🎵 **Audio Playback** - Plays custom WAV files mapped to specific keys
+- 🌤️ **Weather Integration** - Real-time weather reports via Open-Meteo API
+- 📅 **Czech Name Days** - Fetches daily Czech name day information
+- 🗣️ **Text-to-Speech** - Google TTS integration for dynamic announcements
+- 📊 **Real-time Monitoring** - Live call tracking with duration counters
+- 🔍 **SIP Traffic Sniffer** - View all incoming/outgoing SIP messages
+- 🖥️ **System Tray** - Runs minimized with tray notifications
+- 🛡️ **Single Instance** - Prevents multiple instances from running
+- ⚙️ **Dynamic Configuration** - No restart needed for audio mapping changes
 
-- **Key 0** - Replay main menu (eliska.wav)
-- **Key 1** - Play cibula.wav
-- **Key 2** - Play sergei.wav
-- **Key 3** - Play pam.wav
-- **Key 4** - Play dollar.wav
-- **Key 5** - Play smack.wav
-- **Key 7** - Get current weather
+## 🚀 Getting Started
 
-## Configuration
+### Prerequisites
 
-Edit the constants in `Worker.cs` to match your environment:
+- Windows 10/11 (x64)
+- .NET 8.0 Runtime or SDK
+- FFmpeg (for text-to-speech conversion)
+- Network access on UDP port 5060 (default SIP port)
 
-```csharp
-private const string LISTEN_IP = "0.0.0.0";        // Interface to listen on
-private const string PUBLIC_IP = "192.168.100.64"; // Your public/external IP
-private const int SIP_PORT = 5060;                 // SIP port
-private const string BASE_DIR = @"C:\Scripts\audis"; // Base directory
-```
+### Installation
 
-For weather location, modify the coordinates in `GetWeatherTextAsync()`:
-```csharp
-string url = "https://api.open-meteo.com/v1/forecast?latitude=49.85&longitude=18.54&current_weather=true";
-```
+1. **Clone the repository**
 
-## Running the Service
+2. **Restore NuGet packages**
+   ```bash
+   dotnet restore
+   ```
 
-### Development
-```bash
-dotnet run
-```
+3. **Build the project**
+   ```bash
+   dotnet build -c Release
+   ```
 
-### Production (Windows Service)
-```bash
-dotnet publish -c Release
-sc create AUDIS binPath="C:\path\to\AudisService.exe"
-sc start AUDIS
-```
+4. **Install FFmpeg**
+   - Download from [ffmpeg.org](https://ffmpeg.org/download.html)
+   - Add FFmpeg to your system PATH
 
-### Production (Linux systemd)
-```bash
-dotnet publish -c Release
-sudo systemctl enable audis.service
-sudo systemctl start audis.service
-```
+5. **Create audio directory**
+   ```bash
+   mkdir C:\Scripts\AudisService\audio
+   ```
 
-## Architecture
+6. **Add your audio files**
+   - Place WAV files (8kHz, mono, PCM 16-bit) in `C:\Scripts\AudisService\audio\`
+   - Default files: `eliska.wav`, `cibula.wav`, `sergei.wav`, `pam.wav`, `dollar.wav`, `smack.wav`
 
-### Technology Stack
-- **SIPSorcery** - SIP protocol and RTP media handling
-- **Open-Meteo API** - Weather data retrieval
-- **Google Translate TTS** - Text-to-speech synthesis
-- **FFmpeg** - Audio format conversion
+## 📖 Usage
+
+### Starting the Service
+
+1. Launch `AudisService.exe`
+2. Configure network settings (Public IP and Port)
+3. Click **Start Service**
+4. The application will minimize to system tray
+
+### Configuration
+
+#### Network Settings
+- **Public IP**: Your external IP address (used in SIP Contact header)
+- **Port**: SIP listening port (default: 5060)
+
+#### Weather Settings
+- **City**: Display name for weather reports
+- **Latitude/Longitude**: Geographic coordinates for weather data
+
+#### Key Mappings
+Configure which audio file plays for each DTMF key:
+
+| Key | Default Action |
+|-----|----------------|
+| 1   | cibula.wav     |
+| 2   | sergei.wav     |
+| 3   | pam.wav        |
+| 4   | dollar.wav     |
+| 5   | smack.wav      |
+| 0   | eliska.wav     |
+| #   | INFO_PACKAGE (Weather + Name Day + Time) |
+| 6-9, * | Not assigned |
+
+### Special Functions
+
+- **INFO_PACKAGE** (`#` key): Announces current weather, Czech name day, and time
+- **SYSTEM_STATUS**: System diagnostics (uptime, memory usage)
 
 ### Call Flow
-1. Incoming SIP call received
-2. RTP session established
-3. Main menu played (eliska.wav)
-4. Service waits for DTMF input
-5. On key press:
-   - Keys 1-5, 0: Play corresponding audio file
-   - Key 7: Fetch weather → TTS generation → Playback → 3s pause → Replay menu
-6. Loop continues until hangup
 
-### DTMF Detection
-AUDIS uses a dual-mode approach for maximum compatibility:
-- **UA Event Handler** - Standard SIPUserAgent DTMF events
-- **RTP Packet Parser** - Direct RTP payload inspection for legacy devices
+1. Incoming call arrives
+2. System auto-answers with greeting (`eliska.wav`)
+3. Caller presses DTMF key
+4. Corresponding audio file plays or action executes
+5. Returns to listening mode for next input
+6. Call continues until caller hangs up
 
-### Audio Playback Timing
-The service uses a precise Stopwatch-based timing loop to maintain 20ms intervals between RTP packets, ensuring smooth playback on legacy SIP hardware like Linksys phones.
+## 🏗️ Architecture
 
-## Dependencies
+### Project Structure
 
-```xml
-<PackageReference Include="SIPSorcery" Version="6.x.x" />
-<PackageReference Include="Microsoft.Extensions.Hosting" Version="6.x.x" />
+```
+AudisService/
+├── App.xaml.cs              # Application entry point with mutex
+├── MainWindow.xaml          # WPF UI layout
+├── MainWindow.xaml.cs       # UI logic and event handlers
+├── SipEngine.cs             # Core SIP/VoIP engine
+├── Config.cs                # Configuration model
+└── audio/                   # Audio files directory
+    └── *.wav
 ```
 
-## Logging
+### Technology Stack
 
-AUDIS provides detailed logging for:
-- Service startup/shutdown
-- Incoming calls
-- DTMF key detection (both UA and RTP events)
-- Audio playback events
-- Weather API requests
-- Error conditions
+- **Framework**: .NET 8.0 (WPF)
+- **SIP Library**: [SIPSorcery](https://github.com/sipsorcery-org/sipsorcery) 8.0.3
+- **Audio Processing**: RTP/G.711 µ-law codec
+- **APIs**: 
+  - Open-Meteo (Weather)
+  - svatky.adresa.info (Name Days)
+  - Google Translate TTS
+- **UI**: Windows Presentation Foundation (WPF) + Windows Forms (Tray)
 
-## Troubleshooting
+### Key Components
 
-### No audio playback
-- Verify WAV files are 8000Hz, mono, 16-bit PCM
-- Check RTP ports are not blocked by firewall
-- Ensure `AcceptRtpFromAny = true` for NAT scenarios
+#### SipEngine.cs
+- Manages SIP transport and user agent
+- Handles incoming calls and DTMF detection
+- Audio playback engine with RTP streaming
+- API integration for weather and TTS
 
-### DTMF not detected
-- Check both log outputs: `[UA EVENT]` and `[RTP EVENT]`
-- Verify SIP client sends RFC 2833 DTMF events
-- Some clients may require payload type 101 configuration
+#### MainWindow.xaml.cs
+- UI controller with real-time updates
+- Call state management with "graveyard" anti-zombie system
+- Configuration management
+- System tray integration
 
-### Weather not working
-- Verify internet connectivity
-- Check FFmpeg is in system PATH
-- Ensure write permissions to `C:\Scripts\audis\`
+#### Config.cs
+- Serializable configuration model
+- Default key mappings
+- Network and location settings
 
-## Future Enhancements
+## 🔧 Configuration Files
 
-- [ ] Multiple language support
-- [ ] Database integration for call logging
-- [ ] Configurable menu via JSON/XML
-- [ ] Additional weather locations
-- [ ] Voicemail capability
-- [ ] Call recording
+Configuration is stored in-memory and can be modified through the UI. Future versions may support persistent JSON config files.
 
-## License
+Example configuration structure:
+```csharp
+{
+  "PublicIp": "192.168.100.64",
+  "Port": 5060,
+  "WeatherCity": "Karviná",
+  "WeatherLat": 49.85,
+  "WeatherLong": 18.54,
+  "KeyMappings": {
+    "1": "cibula.wav",
+    "2": "sergei.wav",
+    "#": "INFO_PACKAGE"
+  }
+}
+```
+
+## 🐛 Troubleshooting
+
+### Common Issues
+
+**Service won't start on port 5060**
+- Check if another SIP application is using the port
+- Try using a different port (e.g., 5061)
+- Ensure Windows Firewall allows UDP traffic
+
+**No audio playback**
+- Verify WAV files are 8kHz, mono, PCM 16-bit format
+- Check that files exist in `C:\Scripts\AudisService\audio\`
+- Review logs in the UI console
+
+**DTMF not detected**
+- Some SIP providers use in-band DTMF (not RFC 2833)
+- Check SIP traffic sniffer for DTMF events
+- Verify phone/softphone is configured for RFC 2833
+
+**TTS not working**
+- Ensure FFmpeg is installed and in PATH
+- Test with: `ffmpeg -version`
+- Check internet connectivity for Google TTS
+
+**Calls won't connect**
+- Verify Public IP matches your actual external IP
+- Check NAT/firewall rules for UDP 5060
+- Review SIP traffic sniffer for errors
+
+## 🔒 Security Considerations
+
+- **No Authentication**: Current version accepts all incoming calls
+- **Public Exposure**: Binding to 0.0.0.0 exposes service to network
+- **Rate Limiting**: No built-in protection against call flooding
+
+**Recommendations:**
+- Use firewall rules to restrict access
+- Consider implementing SIP authentication
+- Monitor call logs for suspicious activity
+
+## 🛣️ Roadmap
+
+- [ ] Persistent configuration file (JSON)
+- [ ] Call recording capability
+- [ ] Web-based configuration interface
+- [ ] Call history database
+- [ ] Custom TTS voice selection
+
+
+## 📄 License
 
 This project is licensed under the MIT License.
 
-## Acknowledgments
+## 📊 System Requirements
 
-- [SIPSorcery](https://github.com/sipsorcery-org/sipsorcery) - SIP and RTP implementation
-- [Open-Meteo](https://open-meteo.com/) - Free weather API
-- Google Translate TTS - Text-to-speech synthesis
+- **OS**: Windows 10/11 (x64)
+- **RAM**: Minimum 256MB, Recommended 512MB
+- **.NET**: 8.0 Runtime
+- **Network**: UDP port access for SIP
+- **Disk**: ~50MB for application + audio files
 
 ---
+
+*Version 1.1 - Kybl Enterprise*
