@@ -5,153 +5,195 @@
         ResizeMode="CanResizeWithGrip"
         Background="{DynamicResource {x:Static SystemColors.ControlBrushKey}}">
     
-    <Grid Margin="5">
+    <Grid Margin="10">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/> <!-- Status Area -->
             <RowDefinition Height="*"/>    <!-- Tabs -->
         </Grid.RowDefinitions>
 
         <!-- Top Control Bar -->
-        <Border BorderThickness="0,0,0,1" BorderBrush="Gray" Margin="0,0,0,10" Padding="5">
+        <Border BorderThickness="0,0,0,1" BorderBrush="#DDDDDD" Margin="0,0,0,15" Padding="0,0,0,10">
             <StackPanel Orientation="Horizontal">
-                <TextBlock Text="Service Status:" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                <TextBlock Text="Service Status:" VerticalAlignment="Center" Margin="0,0,5,0" Foreground="Gray"/>
                 <TextBlock x:Name="StatusTxt" Text="STOPPED" FontWeight="Bold" Foreground="Red" VerticalAlignment="Center" Width="80"/>
                 
                 <Separator Style="{StaticResource {x:Static ToolBar.SeparatorStyleKey}}" Margin="10,0"/>
                 
-                <Button x:Name="BtnStart" Content=" Start Service " Click="BtnStart_Click" Margin="2,0"/>
-                <Button x:Name="BtnStop" Content=" Stop Service " Click="BtnStop_Click" Margin="2,0" IsEnabled="False"/>
-
-                <!-- NEW: RAM Usage Monitor -->
+                <Button x:Name="BtnStart" Content=" Start Service " Click="BtnStart_Click" Padding="10,3" Margin="2,0"/>
+                <Button x:Name="BtnStop" Content=" Stop Service " Click="BtnStop_Click" Padding="10,3" Margin="2,0" IsEnabled="False"/>
+                
                 <Separator Style="{StaticResource {x:Static ToolBar.SeparatorStyleKey}}" Margin="10,0"/>
-                <TextBlock Text="RAM:" VerticalAlignment="Center" Margin="0,0,5,0" Foreground="Gray"/>
-                <TextBlock x:Name="TxtRam" Text="0 MB" FontWeight="Bold" VerticalAlignment="Center" Foreground="Blue"/>
+
+                <!-- AI STATUS -->
+                <TextBlock Text="AI:" VerticalAlignment="Center" Margin="0,0,5,0" Foreground="Gray"/>
+                <TextBlock x:Name="AiStatusTxt" Text="OFFLINE" FontWeight="Bold" Foreground="Red" VerticalAlignment="Center" Width="70"/>
+                
+                <Button x:Name="BtnStartAi" Content=" Start AI " Click="BtnStartAi_Click" Padding="8,3" Margin="2,0"/>
+                <Button x:Name="BtnStopAi" Content=" Stop AI " Click="BtnStopAi_Click" Padding="8,3" Margin="2,0" IsEnabled="False"/>
+                
+                <Separator Style="{StaticResource {x:Static ToolBar.SeparatorStyleKey}}" Margin="10,0"/>
+
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <CheckBox x:Name="ChkRec" Content=" Call Recording" IsChecked="{Binding IsRecordingEnabled, Mode=TwoWay}" 
+                              VerticalAlignment="Center" Margin="5,0,0,0"/>
+                    <TextBlock Text="(Restart Required)" FontSize="10" Foreground="Gray" VerticalAlignment="Center" Margin="3,0,0,0"
+                               ToolTip="Service must be restarted for this setting to take effect."/>
+                </StackPanel>
             </StackPanel>
         </Border>
 
-        <!-- Main Tabs -->
-        <TabControl Grid.Row="1" Background="{DynamicResource {x:Static SystemColors.ControlLightLightBrushKey}}">
+        <!-- Main Content -->
+        <TabControl Grid.Row="1" BorderThickness="0" Background="Transparent">
             
             <!-- TAB 1: DASHBOARD -->
             <TabItem Header="Dashboard">
-                <Grid Margin="5">
-                    <GroupBox Header="Active Connections">
-                        <DataGrid x:Name="CallsGrid" AutoGenerateColumns="False" 
-                                  GridLinesVisibility="All" HeadersVisibility="Column" 
-                                  IsReadOnly="True" Background="White" RowHeaderWidth="0">
-                            <DataGrid.Columns>
-                                <DataGridTextColumn Header="Call ID" Binding="{Binding CallId}" Width="250"/>
-                                <DataGridTextColumn Header="Status" Binding="{Binding Status}" Width="150"/>
-                                <DataGridTextColumn Header="Input" Binding="{Binding LastInput}" Width="80"/>
-                                <DataGridTextColumn Header="Duration" Binding="{Binding DurationStr}" Width="80"/>
-                            </DataGrid.Columns>
-                        </DataGrid>
-                    </GroupBox>
-                </Grid>
-            </TabItem>
-
-            <!-- TAB 2: SWITCHBOARD -->
-            <TabItem Header="Switchboard (Audio)">
-                <Grid Margin="5">
+                <Grid Margin="0,10,0,0">
                     <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/> <!-- Active Calls Header -->
+                        <RowDefinition Height="*"/>    <!-- Active Calls List -->
+                        <RowDefinition Height="Auto"/> <!-- Recordings Header -->
+                        <RowDefinition Height="*"/>    <!-- Recordings List -->
                     </Grid.RowDefinitions>
-                    <TextBlock Text="Map DTMF Keys to Filenames. Use 'INFO_PACKAGE' for dynamic weather/time." Margin="0,0,0,5" Foreground="Gray"/>
-                    
-                    <DataGrid x:Name="MappingGrid" AutoGenerateColumns="False" CanUserAddRows="False">
+
+                    <!-- Active Calls Section -->
+                    <TextBlock Text="Active Calls" FontWeight="Bold" Margin="0,0,0,5" Grid.Row="0"/>
+                    <DataGrid Grid.Row="1" ItemsSource="{Binding ActiveCalls}" AutoGenerateColumns="False" IsReadOnly="True" 
+                              HeadersVisibility="Column" GridLinesVisibility="Horizontal" Background="White" BorderThickness="1" BorderBrush="#EEEEEE" Margin="0,0,0,15">
                         <DataGrid.Columns>
-                            <DataGridTextColumn Header="DTMF Key" Binding="{Binding Key}" IsReadOnly="True" Width="80"/>
-                            <DataGridTextColumn Header="Filename / Action" Binding="{Binding Value}" Width="300"/>
+                            <DataGridTextColumn Header="Call ID" Binding="{Binding CallId}" Width="*"/>
+                            <DataGridTextColumn Header="Status" Binding="{Binding Status}" Width="100"/>
+                            <DataGridTextColumn Header="Duration" Binding="{Binding DurationStr}" Width="80"/>
+                            <DataGridTextColumn Header="Last Input" Binding="{Binding LastInput}" Width="80"/>
+                            <DataGridTextColumn Header="Active" Binding="{Binding IsActive}" Width="60"/>
                         </DataGrid.Columns>
                     </DataGrid>
+
+                    <!-- Recordings Section -->
+                    <Grid Grid.Row="2" Margin="0,0,0,5">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="Recent Recordings" FontWeight="Bold" VerticalAlignment="Center"/>
+                        <StackPanel Grid.Column="1" Orientation="Horizontal">
+                            <Button Content="Refresh" Click="BtnRefreshRecordings_Click" Padding="5,2" Margin="0,0,5,0"/>
+                            <Button Content="Open Folder" Click="BtnOpenRecordingsFolder_Click" Padding="5,2"/>
+                        </StackPanel>
+                    </Grid>
+                    
+                    <ListBox x:Name="RecordingsList" Grid.Row="3" BorderThickness="1" BorderBrush="#EEEEEE" Background="White">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="{Binding Name}" FontWeight="SemiBold" Margin="0,0,10,0"/>
+                                    <TextBlock Text="{Binding CreationTime, StringFormat='{}{0:yyyy-MM-dd HH:mm}'}" Foreground="Gray"/>
+                                </StackPanel>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
                 </Grid>
             </TabItem>
 
-            <!-- TAB 3: CONFIGURATION -->
-            <TabItem Header="Configuration">
+            <!-- TAB 2: CONFIGURATION -->
+            <TabItem Header="Config">
                 <StackPanel Margin="10">
-                    <GroupBox Header="Network Settings">
-                        <Grid Margin="5">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="100"/>
-                                <ColumnDefinition Width="200"/>
-                            </Grid.ColumnDefinitions>
-                            <Grid.RowDefinitions>
-                                <RowDefinition Height="Auto"/>
-                                <RowDefinition Height="Auto"/>
-                            </Grid.RowDefinitions>
-                            
-                            <Label Content="Public IP:" Grid.Row="0" Grid.Column="0"/>
-                            <TextBox x:Name="TxtPubIp" Text="192.168.100.64" Grid.Row="0" Grid.Column="1" Margin="2"/>
-                            
-                            <Label Content="SIP Port:" Grid.Row="1" Grid.Column="0"/>
-                            <TextBox x:Name="TxtPort" Text="5060" Grid.Row="1" Grid.Column="1" Margin="2"/>
-                        </Grid>
-                    </GroupBox>
-
-                    <GroupBox Header="Weather Location" Margin="0,10,0,0">
-                        <Grid Margin="5">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="100"/>
-                                <ColumnDefinition Width="200"/>
-                            </Grid.ColumnDefinitions>
-                            <Grid.RowDefinitions>
-                                <RowDefinition Height="Auto"/>
-                                <RowDefinition Height="Auto"/>
-                                <RowDefinition Height="Auto"/>
-                            </Grid.RowDefinitions>
-
-                            <Label Content="City Name:" Grid.Row="0"/>
-                            <TextBox x:Name="TxtCity" Text="Karviná" Grid.Row="0" Grid.Column="1" Margin="2"/>
-
-                            <Label Content="Latitude:" Grid.Row="1"/>
-                            <TextBox x:Name="TxtLat" Text="49.85" Grid.Row="1" Grid.Column="1" Margin="2"/>
-
-                            <Label Content="Longitude:" Grid.Row="2"/>
-                            <TextBox x:Name="TxtLon" Text="18.54" Grid.Row="2" Grid.Column="1" Margin="2"/>
-                        </Grid>
-                    </GroupBox>
-                    <Button Content="Apply Configuration" HorizontalAlignment="Left" Width="150" Margin="0,10" Height="25" Click="BtnApplyConfig_Click"/>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
+                        <TextBlock Text="Public IP" VerticalAlignment="Center" FontWeight="Bold"/>
+                        <Button Content="?" Width="18" Height="18" Margin="5,0,0,0" 
+                                FontSize="10" FontWeight="Bold" Background="#F0F0F0" BorderBrush="Gray"
+                                Click="BtnPublicIpHelp_Click" ToolTip="Click for help"/>
+                    </StackPanel>
+                    <TextBox Text="{Binding Config.PublicIp}" Margin="0,0,0,15" Padding="3"/>
+                    
+                    <TextBlock Text="SIP Port" FontWeight="Bold" Margin="0,0,0,5"/>
+                    <TextBox Text="{Binding Config.Port}" Margin="0,0,0,15" Padding="3"/>
+                    
+                    <TextBlock Text="Weather City" FontWeight="Bold" Margin="0,0,0,5"/>
+                    <TextBox Text="{Binding Config.WeatherCity}" Margin="0,0,0,15" Padding="3"/>
+                    
+                    <TextBlock Text="Ollama Model" FontWeight="Bold" Margin="0,0,0,5"/>
+                    <TextBox Text="{Binding Config.OllamaModel}" Margin="0,0,0,5" Padding="3"/>
+                    <TextBlock Text="Default: gemma3:1b" FontSize="10" Foreground="Gray" Margin="0,0,0,15"/>
+                    
+                    <Button Content="Save Configuration" Click="BtnSaveConfig_Click" HorizontalAlignment="Left" Padding="15,5"/>
                 </StackPanel>
             </TabItem>
 
-            <!-- TAB 4: TRAFFIC INSPECTOR -->
-            <TabItem Header="Traffic Inspector">
-                <Grid>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="*"/>
-                        <RowDefinition Height="Auto"/>
-                    </Grid.RowDefinitions>
-                    <TextBox x:Name="TxtSniffer" IsReadOnly="True" VerticalScrollBarVisibility="Auto" 
-                             FontFamily="Courier New" FontSize="11" Background="#FFF" BorderThickness="0"/>
-                    <Button Grid.Row="1" Content="Clear Logs" Click="BtnClearSniff_Click"/>
-                </Grid>
+            <!-- TAB 3: KEY MAPPINGS -->
+            <TabItem Header="Key Mappings">
+                <DataGrid ItemsSource="{Binding Mappings}" AutoGenerateColumns="False" Background="White" BorderThickness="1" BorderBrush="#EEEEEE">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="Key" Binding="{Binding Key}" Width="50" IsReadOnly="True" FontWeight="Bold"/>
+                        <DataGridTextColumn Header="Action / Filename" Binding="{Binding Value}" Width="*"/>
+                    </DataGrid.Columns>
+                </DataGrid>
             </TabItem>
-
+            
+            <!-- TAB 4: FILE MANAGER -->
+            <TabItem Header="Files">
+                 <Grid Margin="0,5,0,0">
+                     <Grid.ColumnDefinitions>
+                         <ColumnDefinition Width="*"/>
+                         <ColumnDefinition Width="Auto"/>
+                     </Grid.ColumnDefinitions>
+                     <ListBox x:Name="FileList" Grid.Column="0" BorderThickness="1" BorderBrush="#EEEEEE"/>
+                     <StackPanel Grid.Column="1" Margin="10,0,0,0">
+                         <Button Content="Refresh List" Click="BtnRefreshFiles_Click" Margin="0,0,0,5" Padding="10,3"/>
+                         <Button Content="Open Folder" Click="BtnOpenFolder_Click" Padding="10,3"/>
+                     </StackPanel>
+                 </Grid>
+            </TabItem>
+            
             <!-- TAB 5: SYSTEM LOGS -->
             <TabItem Header="System Logs">
-                <ListBox x:Name="LogList" FontFamily="Courier New" FontSize="11" BorderThickness="0">
-                    <ListBox.ItemTemplate>
-                        <DataTemplate>
-                            <TextBlock Text="{Binding FullMessage}"/>
-                        </DataTemplate>
-                    </ListBox.ItemTemplate>
-                </ListBox>
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+                    
+                    <!-- Log Controls -->
+                    <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,5">
+                        <Button Content="Export Logs" Click="BtnExportLogs_Click" Padding="10,3" Margin="0,0,5,0"/>
+                        <Button Content="Clear Logs" Click="BtnClearLogs_Click" Padding="10,3" Margin="0,0,5,0"/>
+                        <TextBlock Text="Export logs for debugging and support" 
+                                   VerticalAlignment="Center" 
+                                   Foreground="Gray" 
+                                   FontSize="11" 
+                                   Margin="10,0,0,0"/>
+                    </StackPanel>
+                    
+                    <!-- Log List -->
+                    <ListBox x:Name="LogList" 
+                             Grid.Row="1"
+                             FontFamily="Consolas" 
+                             FontSize="11" 
+                             BorderThickness="1" 
+                             BorderBrush="#EEEEEE" 
+                             Background="#FAFAFA">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding FullMessage}" TextWrapping="Wrap"/>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                </Grid>
             </TabItem>
 
             <!-- TAB 6: ABOUT -->
             <TabItem Header="About">
                 <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
-                    <TextBlock Text="AUDIS" FontSize="32" FontWeight="Bold" HorizontalAlignment="Center"/>
-                    <TextBlock Text="Enterprise SIP Manager" FontSize="16" HorizontalAlignment="Center" Margin="0,0,0,20"/>
+                    <Image x:Name="LogoImage" Width="128" Height="128" Margin="0,0,0,20" RenderOptions.BitmapScalingMode="HighQuality"/>
                     
-                    <TextBlock Text="Version: 1.1" HorizontalAlignment="Center"/>
+                    <TextBlock Text="AUDIS" FontSize="24" FontWeight="Bold" HorizontalAlignment="Center"/>
+                    <TextBlock Text="Enterprise SIP Manager" FontSize="14" HorizontalAlignment="Center" Margin="0,0,0,20"/>
+                    
+                    <TextBlock Text="Version: 1.2" HorizontalAlignment="Center"/>
                     <TextBlock Text="Copyright © 2026 Kybl Enterprise" HorizontalAlignment="Center"/>
                     <TextBlock Text="All Rights Reserved." HorizontalAlignment="Center" Margin="0,0,0,20"/>
                     
                     <TextBlock Text="Warning: This computer program is protected by copyright law." 
-                               FontSize="10" Foreground="Gray" HorizontalAlignment="Center"/>
+                               FontSize="10" Foreground="Gray" HorizontalAlignment="Center" TextWrapping="Wrap" MaxWidth="300" TextAlignment="Center"/>
                 </StackPanel>
             </TabItem>
         </TabControl>
