@@ -134,6 +134,10 @@ namespace AudisService
             List<byte> outgoingAudioBuffer = new List<byte>();
             List<byte> aiInputBuffer = new List<byte>();
             List<byte> voicemailBuffer = new List<byte>();
+            
+            // Track the audio payload type so we can decode correctly later
+            // 0 = PCMU (μ-law), 8 = PCMA (A-law) — default to 0 (most common)
+            int audioPayloadType = 0;
 
             DateTime lastDtmfTime = DateTime.MinValue;
             string lastDtmfKey = "";
@@ -175,39 +179,102 @@ namespace AudisService
             };
 
             // DTMF HANDLER 2: RTP EVENTS
+            int rtpPacketCount = 0;
+            int audioPacketCount = 0;
+            int dtmfPacketCount = 0;
+            
             rtpSession.OnRtpPacketReceived += (ep, type, packet) => 
             {
+                rtpPacketCount++;
                 int pType = (int)type;
                 
-                if (pType == 101 && packet.Payload?.Length >= 4)
+                // CRITICAL DEBUG: Log first 20 RTP packets to see what we're getting
+                if (rtpPacketCount <= 20)
+                {
+                    Log(LogLevel.Information, $"[RTP DEBUG] Packet #{rtpPacketCount}: Type={pType}, Size={packet.Payload?.Length ?? 0}");
+                }
+                
+                // RFC 4733 DTMF Detection
+                // Check all dynamic payload types (96-127) as different systems use different IDs
+                // Common ones: 96, 97, 100, 101, 121
+                if (pType >= 96 && pType <= 127 && packet.Payload?.Length >= 4)
                 {
                     byte eventId = packet.Payload[0];
                     byte endFlag = packet.Payload[1];
+                    bool isEndOfEvent = (endFlag & 0x80) != 0;
                     
-                    if ((endFlag & 0x80) != 0)
+                    // Log first 50 DTMF-like packets for debugging
+                    dtmfPacketCount++;
+                    if (dtmfPacketCount <= 50)
+                    {
+                        Log(LogLevel.Information, $"[RTP DTMF-LIKE] PayloadType={pType}, EventID={eventId}, EndFlag=0x{endFlag:X2}, IsEnd={isEndOfEvent}, Bytes={BitConverter.ToString(packet.Payload.Take(Math.Min(8, packet.Payload.Length)).ToArray())}");
+                    }
+                    
+                    // Only process on end-of-event to avoid duplicates
+                    if (isEndOfEvent)
                     {
                         string? d = ParseDtmf(eventId);
                         if (d != null)
                         {
+                            // Debounce: ignore if same key within 200ms
                             if (d == lastDtmfKey && (DateTime.Now - lastDtmfTime).TotalMilliseconds < 200)
+                            {
+                                Log(LogLevel.Information, $"[RTP DTMF] Debounced duplicate: {d}");
                                 return;
+                            }
                             
                             lastDtmfKey = d;
                             lastDtmfTime = DateTime.Now;
                             
                             callState.LastDigit = d;
                             OnCallStatusChange?.Invoke(this, new CallStatusEventArgs { CallId = callId, Status = "INPUT", LastInput = d, IsActive = true });
-                            Log(LogLevel.Information, $"[RTP DTMF] Key: {d}");
+                            Log(LogLevel.Information, $"[RTP DTMF] *** KEY DETECTED: {d} *** (PayloadType={pType}, EventID={eventId})");
                             
                             if (d == "#" && callState.IsAiRecording) callState.IsAiRecording = false;
                         }
+                        else
+                        {
+                            Log(LogLevel.Warning, $"[RTP DTMF] Unknown EventID={eventId} on PayloadType={pType}");
+                        }
+                    }
+                }
+                else if (pType >= 96 && pType <= 127 && packet.Payload?.Length < 4)
+                {
+                    // Packet looks like DTMF payload type but too short
+                    if (dtmfPacketCount <= 10)
+                    {
+                        Log(LogLevel.Warning, $"[RTP DTMF] Short packet on PayloadType={pType}, Size={packet.Payload?.Length ?? 0}");
                     }
                 }
 
-                if ((pType == 0 || pType == 8) && packet.Payload != null && packet.Payload.Length > 0)
+                if ((pType == 0 || pType == 1 || pType == 8) && packet.Payload != null && packet.Payload.Length > 0)
                 {
+                    audioPacketCount++;
+                    
+                    if (audioPacketCount <= 5)
+                    {
+                        Log(LogLevel.Information, $"[RTP AUDIO] Audio packet #{audioPacketCount}! Type={pType}, Size={packet.Payload.Length}");
+                    }
+                    
+                    // Track the codec being used so we can decode correctly for Whisper
+                    if (audioPacketCount == 1)
+                    {
+                        audioPayloadType = pType;
+                        Log(LogLevel.Information, $"[RTP AUDIO] Codec detected: PayloadType={pType} ({(pType == 8 ? "A-law/PCMA" : pType == 0 ? "μ-law/PCMU" : "PCM")})");
+                    }
+                    
                     if (IsGlobalRecordingEnabled) lock(incomingAudioBuffer) incomingAudioBuffer.AddRange(packet.Payload);
-                    if (callState.IsAiRecording) lock(aiInputBuffer) aiInputBuffer.AddRange(packet.Payload);
+                    
+                    if (callState.IsAiRecording)
+                    {
+                        lock(aiInputBuffer) aiInputBuffer.AddRange(packet.Payload);
+                        int bufSize = aiInputBuffer.Count;
+                        if (bufSize % 8000 == 0) // Log every ~1 second of audio
+                        {
+                            Log(LogLevel.Information, $"[AI RECORD] Buffer: {bufSize} bytes (~{bufSize / 8000.0:F1}s)");
+                        }
+                    }
+                    
                     if (callState.IsVoicemailRecording) lock(voicemailBuffer) voicemailBuffer.AddRange(packet.Payload);
                 }
             };
@@ -217,6 +284,9 @@ namespace AudisService
             
             var answerTime = DateTime.Now;
             Log(LogLevel.Information, $"[TIMING] Call ANSWERED at {answerTime:HH:mm:ss.fff}");
+            Log(LogLevel.Information, $"[DTMF] Listening for RFC 4733 DTMF on payload types 96-127");
+            Log(LogLevel.Information, $"[DTMF] Also listening for SIP INFO DTMF");
+            Log(LogLevel.Information, $"[DTMF] If you don't see DTMF detection, check the RTP DEBUG logs above");
             
             OnCallStatusChange?.Invoke(this, new CallStatusEventArgs { CallId = callId, Status = "CONNECTED", IsActive = true });
             
@@ -268,12 +338,14 @@ namespace AudisService
                         if (d == "*") // AI MODE
                         {
                             Log(LogLevel.Information, "AI Mode activated - Using Gemma 1B");
-                            Log(LogLevel.Information, $"[DEBUG] Ollama URL: http://localhost:11434/api/generate");
+                            Log(LogLevel.Information, $"[AI] Ollama URL: http://localhost:11434/api/generate");
+                            Log(LogLevel.Information, $"[AI] Audio codec in use: PayloadType={audioPayloadType} ({(audioPayloadType == 8 ? "A-law/PCMA" : "μ-law/PCMU")})");
                             
                             await PlayTts(rtpSession, "Mluvte po zaznění tónu. Ukončete křížkem.", callState, outgoingAudioBuffer);
                             
-                            aiInputBuffer.Clear();
+                            lock(aiInputBuffer) aiInputBuffer.Clear();
                             callState.IsAiRecording = true;
+                            Log(LogLevel.Information, $"[AI] Recording started — speak now, press # to stop");
                             
                             int timeout = 0;
                             while(callState.IsActive && callState.IsAiRecording && timeout < 500)
@@ -284,23 +356,30 @@ namespace AudisService
                             }
                             callState.IsAiRecording = false;
 
-                            if (aiInputBuffer.Count > 1600)
+                            byte[] capturedAudio;
+                            lock(aiInputBuffer) capturedAudio = aiInputBuffer.ToArray();
+                            
+                            Log(LogLevel.Information, $"[AI] Recording stopped. Captured: {capturedAudio.Length} bytes (~{capturedAudio.Length / 8000.0:F1}s), timeout={timeout >= 500}");
+
+                            if (capturedAudio.Length > 1600)
                             {
-                                Log(LogLevel.Information, $"AI Processing {aiInputBuffer.Count} bytes");
+                                Log(LogLevel.Information, $"[AI] Sending {capturedAudio.Length} bytes to Whisper (codec type={audioPayloadType})...");
                                 
-                                string userText = await _aiCore.TranscribeAudioAsync(aiInputBuffer.ToArray());
-                                Log(LogLevel.Information, $"[AI] User said: {userText}");
+                                string userText = await _aiCore.TranscribeAudioAsync(capturedAudio, audioPayloadType);
+                                Log(LogLevel.Information, $"[AI] Whisper result: '{userText}'");
                                 
-                                Log(LogLevel.Information, $"[AI] Sending request to Ollama...");
+                                Log(LogLevel.Information, $"[AI] Sending to Ollama: '{userText}'");
                                 string aiResponse = await _aiCore.AskLocalAiAsync(userText);
-                                Log(LogLevel.Information, $"[AI] Gemma response: {aiResponse}");
+                                Log(LogLevel.Information, $"[AI] Gemma response: '{aiResponse}'");
 
                                 byte[] responseAudio = await GenerateGoogleTtsBytes(aiResponse);
+                                // Clear LastDigit so PlayPcmBytes can play
+                                callState.LastDigit = null;
                                 await PlayPcmBytes(rtpSession, responseAudio, callState, outgoingAudioBuffer);
                             }
                             else
                             {
-                                Log(LogLevel.Warning, $"[AI] Insufficient audio: {aiInputBuffer.Count} bytes");
+                                Log(LogLevel.Warning, $"[AI] Insufficient audio: {capturedAudio.Length} bytes (need >1600). Is the caller sending RTP? Check [RTP AUDIO] logs above.");
                                 await PlayTts(rtpSession, "Nezachytil jsem žádný zvuk.", callState, outgoingAudioBuffer);
                             }
                             
@@ -549,11 +628,15 @@ namespace AudisService
             string wavFile = Path.Combine(BaseDir, "temp_tts.wav");
             
             try {
+                Log(LogLevel.Information, $"[TTS] Generating speech for: '{text.Substring(0, Math.Min(50, text.Length))}'...");
+                
                 string url = $"https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=cs&q={Uri.EscapeDataString(text)}";
                 _httpClient.DefaultRequestHeaders.Clear();
                 _httpClient.DefaultRequestHeaders.UserAgent.ParseAdd("Mozilla/5.0");
                 
                 byte[] mp3Data = await _httpClient.GetByteArrayAsync(url);
+                Log(LogLevel.Information, $"[TTS] Downloaded {mp3Data.Length} bytes from Google");
+                
                 await File.WriteAllBytesAsync(mp3File, mp3Data);
                 
                 var psi = new ProcessStartInfo {
@@ -564,24 +647,40 @@ namespace AudisService
                 };
                 
                 using var proc = Process.Start(psi);
-                if (proc != null) await proc.WaitForExitAsync();
+                if (proc != null)
+                {
+                    await proc.WaitForExitAsync();
+                    Log(LogLevel.Information, $"[TTS] ffmpeg exit code: {proc.ExitCode}");
+                }
+                else
+                {
+                    Log(LogLevel.Error, "[TTS] Failed to start ffmpeg process!");
+                    return Array.Empty<byte>();
+                }
                 
                 if (File.Exists(wavFile))
                 {
                     byte[] wavData = await File.ReadAllBytesAsync(wavFile);
+                    Log(LogLevel.Information, $"[TTS] Generated {wavData.Length} bytes of WAV audio");
+                    
                     try { File.Delete(mp3File); } catch { }
                     try { File.Delete(wavFile); } catch { }
                     return wavData;
                 }
+                else
+                {
+                    Log(LogLevel.Error, "[TTS] WAV file was not created by ffmpeg!");
+                }
             }
             catch (Exception ex)
             {
-                Log(LogLevel.Error, $"TTS Failed: {ex.Message}");
+                Log(LogLevel.Error, $"[TTS] Failed: {ex.Message}");
+                Log(LogLevel.Error, $"[TTS] Exception type: {ex.GetType().Name}");
             }
             
+            Log(LogLevel.Warning, "[TTS] Returning empty audio array");
             return Array.Empty<byte>();
         }
-
         private string? ParseDtmf(byte id)
         {
             if (id >= 0 && id <= 9) return id.ToString();
