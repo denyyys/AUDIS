@@ -612,7 +612,7 @@ namespace AudisService
                     writer.WriteLine("=".PadRight(80, '='));
                     writer.WriteLine();
                     
-                    writer.WriteLine($"Version: 1.2");
+                    writer.WriteLine($"Version: 1.3");
                     writer.WriteLine($"Base Directory: {AppDomain.CurrentDomain.BaseDirectory}");
                     writer.WriteLine($"Service Status: {StatusTxt.Text}");
                     writer.WriteLine($"AI Status: {AiStatusTxt.Text}");
