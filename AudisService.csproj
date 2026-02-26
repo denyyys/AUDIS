@@ -20,6 +20,8 @@
     </None>
     <PackageReference Include="Microsoft.Extensions.Logging" Version="8.0.0" />
     <PackageReference Include="SIPSorcery" Version="8.0.3" />
+    <PackageReference Include="Whisper.net" Version="1.7.1" />
+    <PackageReference Include="Whisper.net.Runtime" Version="1.7.1" />
   </ItemGroup>
 
 </Project>
