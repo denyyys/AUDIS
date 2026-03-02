@@ -1,0 +1,105 @@
+<Window x:Class="AudisService.CallLogWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="AUDIS — Call Log"
+        Height="480" Width="720"
+        WindowStartupLocation="CenterOwner"
+        Background="#F2F2F2">
+
+    <Window.Resources>
+        <!-- Modern flat button matching main window style -->
+        <Style TargetType="Button">
+            <Setter Property="Background"      Value="#E0E0E0"/>
+            <Setter Property="Foreground"      Value="#1A1A1A"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="BorderBrush"     Value="#BDBDBD"/>
+            <Setter Property="Padding"         Value="14,5"/>
+            <Setter Property="Cursor"          Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="bd"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                >
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"
+                                              Margin="{TemplateBinding Padding}"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="bd" Property="Background"  Value="#D0E8FF"/>
+                                <Setter TargetName="bd" Property="BorderBrush" Value="#0078D7"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="bd" Property="Background"  Value="#B8D8FF"/>
+                                <Setter TargetName="bd" Property="BorderBrush" Value="#005499"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+
+    <Grid Margin="10">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <Border Grid.Row="0" Background="#000080" Padding="10,6" Margin="0,0,0,8" >
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Text="Call Log" Foreground="White" FontWeight="Bold"
+                           FontSize="13" FontFamily="Tahoma" VerticalAlignment="Center"/>
+                <TextBlock Text=" — calls since service started" Foreground="#90CAF9"
+                           FontSize="11" VerticalAlignment="Center"/>
+            </StackPanel>
+        </Border>
+
+        <!-- Call Table -->
+        <DataGrid Grid.Row="1" x:Name="CallGrid"
+                  AutoGenerateColumns="False" IsReadOnly="True"
+                  HeadersVisibility="Column" GridLinesVisibility="Horizontal"
+                  Background="White" BorderThickness="1" BorderBrush="#D0D0D0"
+                  AlternatingRowBackground="#F8F8FF"
+                  RowBackground="White"
+                  SelectionMode="Single">
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="#"         Binding="{Binding RowIndex}"    Width="35"/>
+                <DataGridTextColumn Header="Extension" Binding="{Binding Extension}"   Width="120"/>
+                <DataGridTextColumn Header="Call ID"   Binding="{Binding CallId}"      Width="*"/>
+                <DataGridTextColumn Header="Start"     Binding="{Binding StartTimeStr}" Width="80"/>
+                <DataGridTextColumn Header="End"       Binding="{Binding EndTimeStr}"   Width="80"/>
+                <DataGridTextColumn Header="Duration"  Binding="{Binding DurationStr}"  Width="80"/>
+                <DataGridTextColumn Header="Status"    Binding="{Binding Status}"       Width="80">
+                    <DataGridTextColumn.ElementStyle>
+                        <Style TargetType="TextBlock">
+                            <Style.Triggers>
+                                <Trigger Property="Text" Value="Active">
+                                    <Setter Property="Foreground" Value="#007700"/>
+                                    <Setter Property="FontWeight" Value="Bold"/>
+                                </Trigger>
+                                <Trigger Property="Text" Value="Ended">
+                                    <Setter Property="Foreground" Value="#777777"/>
+                                </Trigger>
+                            </Style.Triggers>
+                        </Style>
+                    </DataGridTextColumn.ElementStyle>
+                </DataGridTextColumn>
+            </DataGrid.Columns>
+        </DataGrid>
+
+        <!-- Bottom bar -->
+        <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,8,0,0"
+                    HorizontalAlignment="Right">
+            <TextBlock x:Name="TxtCount" Text="0 calls" VerticalAlignment="Center"
+                       Foreground="Gray" Margin="0,0,20,0" FontSize="11"/>
+            <Button Content="Export to File" Click="BtnExport_Click" Margin="0,0,8,0"/>
+            <Button Content="Clear Log"      Click="BtnClear_Click"  Margin="0,0,8,0"/>
+            <Button Content="Close"          Click="BtnClose_Click"/>
+        </StackPanel>
+    </Grid>
+</Window>

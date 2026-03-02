@@ -1,0 +1,140 @@
+<Window x:Class="AudisService.ServerConfigWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="SIP Server Config"
+        Height="460" Width="420"
+        ResizeMode="NoResize"
+        WindowStartupLocation="CenterOwner"
+        Background="#F2F2F2">
+
+    <Window.Resources>
+
+        <!-- Modern flat button -->
+        <Style TargetType="Button">
+            <Setter Property="Background"      Value="#E0E0E0"/>
+            <Setter Property="Foreground"      Value="#1A1A1A"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="BorderBrush"     Value="#BDBDBD"/>
+            <Setter Property="Padding"         Value="14,5"/>
+            <Setter Property="Cursor"          Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="bd"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                >
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"
+                                              Margin="{TemplateBinding Padding}"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="bd" Property="Background"  Value="#D0E8FF"/>
+                                <Setter TargetName="bd" Property="BorderBrush" Value="#0078D7"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="bd" Property="Background"  Value="#B8D8FF"/>
+                                <Setter TargetName="bd" Property="BorderBrush" Value="#005499"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style TargetType="TextBox">
+            <Setter Property="Background"      Value="White"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="BorderBrush"     Value="#BDBDBD"/>
+            <Setter Property="Padding"         Value="4,3"/>
+        </Style>
+
+        <Style TargetType="GroupBox">
+            <Setter Property="Margin"          Value="0,0,0,10"/>
+            <Setter Property="Padding"         Value="8,6,8,8"/>
+            <Setter Property="BorderBrush"     Value="#D0D0D0"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Background"      Value="White"/>
+        </Style>
+    </Window.Resources>
+
+    <Grid Margin="10">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto">
+            <StackPanel>
+                <GroupBox Header="Network">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="120"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+
+                        <TextBlock Grid.Row="0" Grid.Column="0" Text="Public IP:" VerticalAlignment="Center" Margin="0,5"/>
+                        <TextBox   Grid.Row="0" Grid.Column="1" x:Name="TxtPublicIp" Margin="0,5"/>
+                        <Button    Grid.Row="0" Grid.Column="2" Content="?" Width="26" Height="26"
+                                   Margin="4,5,0,5" FontSize="11" FontWeight="Bold"
+                                   Click="BtnIpHelp_Click" ToolTip="What is this?" Padding="0"/>
+
+                        <TextBlock Grid.Row="1" Grid.Column="0" Text="SIP Port:" VerticalAlignment="Center" Margin="0,5"/>
+                        <TextBox   Grid.Row="1" Grid.Column="1" x:Name="TxtPort" Margin="0,5"/>
+                    </Grid>
+                </GroupBox>
+
+                <GroupBox Header="Weather Location">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="120"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+
+                        <TextBlock Grid.Row="0" Grid.Column="0" Text="City:"      VerticalAlignment="Center" Margin="0,5"/>
+                        <TextBox   Grid.Row="0" Grid.Column="1" x:Name="TxtWeatherCity" Margin="0,5"/>
+
+                        <TextBlock Grid.Row="1" Grid.Column="0" Text="Latitude:"  VerticalAlignment="Center" Margin="0,5"/>
+                        <TextBox   Grid.Row="1" Grid.Column="1" x:Name="TxtLat"   Margin="0,5"/>
+
+                        <TextBlock Grid.Row="2" Grid.Column="0" Text="Longitude:" VerticalAlignment="Center" Margin="0,5"/>
+                        <TextBox   Grid.Row="2" Grid.Column="1" x:Name="TxtLong"  Margin="0,5"/>
+                    </Grid>
+                </GroupBox>
+
+                <GroupBox Header="AI (Ollama)">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="120"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        <TextBlock Grid.Row="0" Grid.Column="0" Text="Model:" VerticalAlignment="Center" Margin="0,5"/>
+                        <TextBox   Grid.Row="0" Grid.Column="1" x:Name="TxtOllamaModel" Margin="0,5"/>
+                    </Grid>
+                </GroupBox>
+
+                <TextBlock Text="Settings are saved automatically and persist across restarts."
+                           FontSize="10" Foreground="#888888" TextWrapping="Wrap" Margin="0,0,0,6"/>
+            </StackPanel>
+        </ScrollViewer>
+
+        <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,8,0,0">
+            <Button Content="Save"   Click="BtnSave_Click"   Margin="0,0,8,0"/>
+            <Button Content="Cancel" Click="BtnCancel_Click"/>
+        </StackPanel>
+    </Grid>
+</Window>

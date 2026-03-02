@@ -20,10 +20,11 @@ namespace AudisService
 {
     public class CallStatusEventArgs : EventArgs
     {
-        public string CallId { get; set; } = string.Empty;
-        public string Status { get; set; } = string.Empty;
+        public string CallId    { get; set; } = string.Empty;
+        public string Status    { get; set; } = string.Empty;
         public string LastInput { get; set; } = string.Empty;
-        public bool IsActive { get; set; }
+        public string Extension { get; set; } = string.Empty;  // Caller/callee phone number
+        public bool   IsActive  { get; set; }
     }
 
     public class SipEngine
