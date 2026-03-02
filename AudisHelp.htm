@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>AUDIS Enterprise SIP Manager – Help</title>
+<style>
+  body { font-family: "MS Sans Serif", Tahoma, Arial, sans-serif; font-size: 13px;
+         background:#C0C0C0; color:black; margin:0; padding:0; }
+  .sidebar { position:fixed; top:0; left:0; width:180px; height:100vh;
+             background:#000080; color:white; overflow-y:auto; padding:8px 0; }
+  .sidebar h3 { font-size:12px; padding:6px 10px; background:#000060; margin:0 0 4px 0; }
+  .sidebar a  { display:block; padding:4px 12px; color:#C0C0FF; text-decoration:none;
+                font-size:12px; }
+  .sidebar a:hover { background:#000060; color:white; }
+  .content { margin-left:188px; padding:16px 24px; max-width:760px; }
+  h1 { font-size:18px; background:#000080; color:white; padding:6px 10px; margin:0 0 12px 0; }
+  h2 { font-size:14px; background:#D4D0C8; border:1px solid #808080; padding:3px 8px;
+       margin:20px 0 6px 0; }
+  h3 { font-size:13px; border-bottom:1px solid #808080; margin:12px 0 4px 0; }
+  table { border-collapse:collapse; width:100%; margin:6px 0 12px 0; }
+  th { background:#000080; color:white; padding:4px 8px; text-align:left; font-size:12px; }
+  td { padding:3px 8px; border-bottom:1px solid #D0D0D0; font-size:12px; }
+  tr:nth-child(even) { background:#F0F0F0; }
+  .note  { background:#FFFFF0; border:1px solid #808000; padding:6px 10px; margin:8px 0; }
+  .warn  { background:#FFF0F0; border:1px solid #800000; padding:6px 10px; margin:8px 0; }
+  .tip   { background:#F0FFF0; border:1px solid #008000; padding:6px 10px; margin:8px 0; }
+  code   { background:#E0E0E0; padding:1px 4px; font-family:Consolas,monospace; }
+  pre    { background:#1E1E1E; color:#D4D4D4; padding:8px; font-family:Consolas,monospace;
+           font-size:11px; overflow-x:auto; }
+  hr     { border:none; border-top:1px solid #808080; margin:16px 0; }
+</style>
+</head>
+<body>
+
+<!-- Sidebar navigation -->
+<div class="sidebar">
+  <h3>AUDIS v1.4 Help</h3>
+  <a href="#overview">Overview</a>
+  <a href="#quickstart">Quick Start</a>
+  <a href="#toolbar">Toolbar</a>
+  <a href="#server">SIP Server</a>
+  <a href="#keymappings">Key Mappings</a>
+  <a href="#ai">AI Mode</a>
+  <a href="#client">SIP Client</a>
+  <a href="#clientsettings">Client Settings</a>
+  <a href="#logs">Logs</a>
+  <a href="#audio">Audio Files</a>
+  <a href="#troubleshooting">Troubleshooting</a>
+  <a href="#ports">Port Reference</a>
+  <a href="#about">About</a>
+</div>
+
+<div class="content">
+
+<h1>AUDIS Enterprise SIP Manager — User Manual</h1>
+<p>Version 1.4 &nbsp;|&nbsp; Kybl Enterprise &nbsp;|&nbsp; &copy; 2026</p>
+
+<!-- ──────────────────────────────────────────────────────────────────────── -->
+<h2 id="overview">Overview</h2>
+<p>AUDIS is a Windows desktop SIP telephony server and client built on the .NET 8 platform.
+It can:</p>
+<ul>
+  <li>Answer incoming SIP calls and play audio menus (DTMF-driven IVR)</li>
+  <li>Record calls and voicemails</li>
+  <li>Respond to caller questions using an on-device AI (Whisper + Ollama)</li>
+  <li>Make outbound calls via the built-in <strong>SIP Client</strong></li>
+  <li>Report the current time and weather</li>
+</ul>
+
+<!-- ──────────────────────────────────────────────────────────────────────── -->
+<h2 id="quickstart">Quick Start</h2>
+<ol>
+  <li>Set your <strong>Public IP</strong> in the <em>Config</em> tab to your machine's LAN IP
+      (e.g. <code>192.168.100.64</code>).</li>
+  <li>Place your WAV audio files (8 kHz, mono, 16-bit PCM) in the <code>audio\</code> folder.</li>
+  <li>Click <strong>Start Service</strong> — AUDIS listens on UDP port <code>5060</code>.</li>
+  <li>Point any SIP phone or PBX extension at <code>sip:audis@&lt;YOUR-IP&gt;:5060</code>.</li>
+  <li>Call it. You will hear <code>eliska.wav</code> followed by the DTMF menu.</li>
+</ol>
+<div class="note">
+  <strong>WAV format requirement:</strong> All audio files must be
+  <strong>8 000 Hz, mono, 16-bit PCM</strong>.
+  Convert with: <code>ffmpeg -i input.mp3 -ar 8000 -ac 1 -acodec pcm_s16le output.wav</code>
+</div>
+
+<!-- ──────────────────────────────────────────────────────────────────────── -->
+<h2 id="toolbar">Toolbar</h2>
+<p>The toolbar sits below the service status row and gives one-click access to key features.</p>
+<table>
+  <tr><th>Icon</th><th>Action</th><th>Description</th></tr>
+  <tr><td>Phone</td><td>SIP Client</td>
+      <td>Opens the outbound SIP Client window (port 5061)</td></tr>
+  <tr><td>Gear</td><td>SIP Setup</td>
+      <td>Opens SIP Client settings (ports, account, codec, DTMF method)</td></tr>
+  <tr><td>Paper+Arrow</td><td>Export Log</td>
+      <td>Exports the current server log to <code>logs\</code> and opens it instantly</td></tr>
+  <tr><td>Book</td><td>Help</td>
+      <td>Opens this help file in your browser</td></tr>
+</table>
+
+<!-- ──────────────────────────────────────────────────────────────────────── -->
+<h2 id="server">SIP Server</h2>
+<h3>Starting and stopping</h3>
+<p>Use the <strong>Start Service</strong> / <strong>Stop Service</strong> buttons at the top.
+The status indicator shows <span style="color:green"><strong>RUNNING</strong></span> or
+<span style="color:red"><strong>STOPPED</strong></span>.</p>
+
+<h3>Configuration tab</h3>
+<table>
+  <tr><th>Field</th><th>Default</th><th>Notes</th></tr>
+  <tr><td>Public IP</td><td>192.168.100.64</td>
+      <td>Used in SIP Contact headers. Set to your LAN IP behind NAT.</td></tr>
+  <tr><td>SIP Port</td><td>5060</td>
+      <td>UDP port the server listens on. Do not change unless you have a conflict.</td></tr>
+  <tr><td>Weather City</td><td>Karviná</td>
+      <td>City name spoken in the INFO_PACKAGE voice menu.</td></tr>
+  <tr><td>Ollama Model</td><td>gemma3:1b</td>
+      <td>AI model used when a caller presses * for AI mode.</td></tr>
+</table>
+
+<!-- ──────────────────────────────────────────────────────────────────────── -->
+<h2 id="keymappings">Key Mappings</h2>
+<p>When a call is connected, callers press DTMF digits to hear different audio.
+Each digit maps to an audio file name or a system action.</p>
+<table>
+  <tr><th>Key</th><th>Default Action</th><th>Notes</th></tr>
+  <tr><td>0</td><td>eliska.wav</td><td>Greeting / main menu</td></tr>
+  <tr><td>1–5</td><td>cibula.wav, sergei.wav…</td><td>Custom audio files</td></tr>
+  <tr><td>6</td><td>SYSTEM_STATUS</td>
+      <td>Speaks the number of active calls</td></tr>
+  <tr><td>7</td><td>INFO_PACKAGE</td>
+      <td>Speaks current time and temperature</td></tr>
+  <tr><td>8</td><td>VOICEMAIL</td>
+      <td>Records a voicemail; saved to <code>voicemail\</code></td></tr>
+  <tr><td>*</td><td>AI_START</td>
+      <td>Activates AI transcription and response mode</td></tr>
+  <tr><td>#</td><td>AI_STOP</td>
+      <td>Stops AI recording and processes the captured speech</td></tr>
+</table>
+<div class="tip">
+  You can change the value in the <em>Key Mappings</em> tab. Use any filename from
+  the <code>audio\</code> folder, or one of the system keywords above.
+</div>
+
+<!-- ──────────────────────────────────────────────────────────────────────── -->
+<h2 id="ai">AI Mode (*)</h2>
+<p>When a caller presses <strong>*</strong>, AUDIS enters AI mode:</p>
+<ol>
+  <li>Caller speaks their question or message.</li>
+  <li>Caller presses <strong>#</strong> to stop recording.</li>
+  <li>The recorded audio is transcribed by <strong>Whisper.net</strong> (<code>ggml-base.bin</code>).</li>
+  <li>The transcribed text is sent to <strong>Ollama</strong> (local LLM).</li>
+  <li>The AI response is converted to speech via Google TTS and played back.</li>
+</ol>
+
+<h3>Prerequisites</h3>
+<ul>
+  <li><strong>Ollama</strong> — <a href="https://ollama.ai" target="_blank">ollama.ai</a>
+      — install and run <code>ollama pull gemma3:1b</code></li>
+  <li><strong>Whisper model</strong> — download <code>ggml-base.bin</code> from
+      <a href="https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base.bin" target="_blank">
+      Hugging Face</a> and place it next to <code>AudisService.exe</code></li>
+  <li><strong>ffmpeg</strong> — must be in your system PATH (for TTS audio conversion)</li>
+  <li>Internet access — Google TTS requires internet for voice synthesis</li>
+</ul>
+
+<h3>Codec auto-detection</h3>
+<p>AUDIS automatically detects whether the caller's phone sends
+<strong>PCMU (μ-law, payload type 0)</strong> or <strong>PCMA (A-law, payload type 8)</strong>
+and decodes accordingly before feeding to Whisper. If you see the fallback response
+<em>"Kdo jsi?"</em> every time, check the console log for
+<code>[WHISPER] Silence check</code> output.</p>
+
+<!-- ──────────────────────────────────────────────────────────────────────── -->
+<h2 id="client">SIP Client</h2>
+<p>The SIP Client lets AUDIS <em>make</em> outbound calls from the same machine.
+It runs on a <strong>separate SIP transport (port 5061)</strong> so it does not
+interfere with the incoming call server on port 5060.</p>
+
+<h3>Making a call</h3>
+<ol>
+  <li>Click the <em>SIP Client</em> toolbar button or open it from the toolbar.</li>
+  <li>Type a SIP address in the top field, for example:
+    <ul>
+      <li><code>192.168.1.5</code> — calls port 5060 on that IP</li>
+      <li><code>sip:200@pbx.local</code> — calls extension 200 at pbx.local</li>
+      <li><code>sip:alice@example.com:5080</code> — custom port</li>
+    </ul>
+  </li>
+  <li>Press <strong>Call</strong> or hit <kbd>Enter</kbd>.</li>
+</ol>
+
+<h3>During a call</h3>
+<p>Once connected, AUDIS plays <code>eliska.wav</code> to the remote party and
+waits for them to press DTMF digits, exactly as if they had called the server.
+You can also <strong>press the on-screen dialpad buttons</strong> during a call
+to send DTMF to the remote end.</p>
+
+<h3>Call status colours</h3>
+<table>
+  <tr><th>Status</th><th>Colour</th><th>Meaning</th></tr>
+  <tr><td>Idle</td>     <td style="background:#004400;color:lime">Lime</td>    <td>No call in progress</td></tr>
+  <tr><td>Calling</td>  <td style="background:#444400;color:yellow">Yellow</td><td>Ringing the remote</td></tr>
+  <tr><td>Connected</td><td style="background:#004400;color:lime">Lime</td>   <td>Call active</td></tr>
+  <tr><td>Ending</td>   <td style="background:#442200;color:orange">Orange</td><td>Hanging up</td></tr>
+  <tr><td>Ended</td>    <td style="background:#440000;color:red">Orange-Red</td><td>Call finished</td></tr>
+</table>
+
+<!-- ──────────────────────────────────────────────────────────────────────── -->
+<h2 id="clientsettings">SIP Client Settings</h2>
+<p>Access via the <em>SIP Setup</em> toolbar button. Settings are saved to
+<code>sip_client_config.json</code> in the application directory.</p>
+
+<h3>Network tab</h3>
+<table>
+  <tr><th>Field</th><th>Default</th><th>Notes</th></tr>
+  <tr><td>Local SIP Port</td><td>5061</td>
+      <td>Must differ from the server port (5060)</td></tr>
+  <tr><td>RTP Port Start</td><td>12000</td>
+      <td>Media port range start</td></tr>
+  <tr><td>RTP Port End</td><td>12100</td>
+      <td>Media port range end</td></tr>
+  <tr><td>Public IP</td><td>192.168.100.64</td>
+      <td>Used in SIP Contact for NAT traversal</td></tr>
+</table>
+
+<h3>SIP Account tab</h3>
+<p>Enable SIP Registration if you want to register with a SIP provider or PBX before
+making calls. Fill in Server, Username, Domain, Password, and Transport.
+If you are calling directly by IP (peer-to-peer), leave registration disabled.</p>
+
+<h3>Media tab</h3>
+<table>
+  <tr><th>Setting</th><th>Options</th><th>Recommendation</th></tr>
+  <tr><td>DTMF Method</td><td>RFC 2833 / SIP INFO</td>
+      <td>RFC 2833 for most SIP phones; SIP INFO for providers that require it</td></tr>
+  <tr><td>Codec</td><td>PCMU / PCMA</td>
+      <td>PCMU (μ-law) is standard in North America and most VoIP equipment</td></tr>
+</table>
+
+<!-- ──────────────────────────────────────────────────────────────────────── -->
+<h2 id="logs">Logs</h2>
+<p>AUDIS maintains two separate logs:</p>
+<ul>
+  <li><strong>System Logs tab</strong> — server activity: incoming calls, DTMF, audio playback, errors</li>
+  <li><strong>SIP Client window log</strong> — outbound call activity, separate log file on export</li>
+</ul>
+
+<h3>Exporting logs</h3>
+<p>Use the <em>Export Log</em> toolbar button to instantly export and open the server log.
+Inside the SIP Client window, click <em>Export</em> to save the client log.
+Both save timestamped files in <code>logs\</code>.</p>
+
+<div class="tip">
+  Always export logs before closing AUDIS if you need to investigate an issue —
+  the in-memory log is lost on exit.
+</div>
+
+<!-- ──────────────────────────────────────────────────────────────────────── -->
+<h2 id="audio">Audio Files</h2>
+<p>All audio files live in <code>&lt;install dir&gt;\audio\</code>.</p>
+<div class="warn">
+  <strong>Required format:</strong> WAV, 8 000 Hz, mono, 16-bit PCM (signed).
+  Files in any other format will play as noise or silence.
+</div>
+<pre>ffmpeg -i input.mp3   -ar 8000 -ac 1 -acodec pcm_s16le output.wav
+ffmpeg -i input.ogg   -ar 8000 -ac 1 -acodec pcm_s16le output.wav
+ffmpeg -i input.m4a   -ar 8000 -ac 1 -acodec pcm_s16le output.wav</pre>
+<p>Use the <em>Files</em> tab to browse the audio folder and verify which files are present.
+Click <em>Open Folder</em> to open it in Explorer.</p>
+
+<!-- ──────────────────────────────────────────────────────────────────────── -->
+<h2 id="troubleshooting">Troubleshooting</h2>
+
+<h3>Caller hears nothing / call drops immediately</h3>
+<ul>
+  <li>Verify <code>eliska.wav</code> exists in the <code>audio\</code> folder</li>
+  <li>Check it is 8 kHz mono 16-bit PCM (not MP3 or stereo)</li>
+  <li>Check <em>Public IP</em> matches your machine's actual LAN IP</li>
+  <li>Open UDP port 5060 (SIP) and ports 10000–20000 (RTP) in Windows Firewall</li>
+</ul>
+
+<h3>DTMF not working</h3>
+<ul>
+  <li>Check the <em>System Logs</em> for <code>[RTP DEBUG]</code> lines — they show what payload types arrive</li>
+  <li>If you see payload types 96–127 but no detection, the phone may send end-of-event only once; check debounce logs</li>
+  <li>Try switching from RFC 2833 to SIP INFO (or vice-versa) in your SIP phone's settings</li>
+  <li>Some phones require in-band DTMF; AUDIS currently supports RFC 4733 and SIP INFO only</li>
+</ul>
+
+<h3>AI returns "Kdo jsi?" every time</h3>
+<ul>
+  <li>Check that <code>ggml-base.bin</code> is present next to the EXE</li>
+  <li>Look for <code>[WHISPER] Silence check: xx/100 bytes are silence</code> — if &gt;90, audio is not reaching the buffer</li>
+  <li>Check codec: <code>[RTP AUDIO] Codec detected: PayloadType=X</code> — should be 0 (PCMU) or 8 (PCMA)</li>
+  <li>Ensure the caller speaks for at least 2 seconds before pressing #</li>
+</ul>
+
+<h3>Ollama AI not starting</h3>
+<ul>
+  <li>Run <code>ollama serve</code> in a terminal manually to see error output</li>
+  <li>Run <code>ollama pull gemma3:1b</code> to download the model</li>
+  <li>Check port 11434 is not used by another process: <code>netstat -ano | findstr 11434</code></li>
+</ul>
+
+<h3>SIP Client cannot connect</h3>
+<ul>
+  <li>Check that the target SIP address is reachable (ping the IP first)</li>
+  <li>Ensure port 5061 is open in Windows Firewall</li>
+  <li>Verify the <em>Public IP</em> in SIP Client Settings matches your LAN IP</li>
+  <li>If calling through a SIP proxy, enable registration and fill in the account details</li>
+</ul>
+
+<!-- ──────────────────────────────────────────────────────────────────────── -->
+<h2 id="ports">Port Reference</h2>
+<table>
+  <tr><th>Port</th><th>Protocol</th><th>Purpose</th></tr>
+  <tr><td>5060</td><td>UDP</td><td>AUDIS SIP Server (incoming calls)</td></tr>
+  <tr><td>5061</td><td>UDP/TCP</td><td>AUDIS SIP Client (outbound calls)</td></tr>
+  <tr><td>10000–20000</td><td>UDP</td><td>RTP media (server side)</td></tr>
+  <tr><td>12000–12100</td><td>UDP</td><td>RTP media (client side, configurable)</td></tr>
+  <tr><td>11434</td><td>TCP</td><td>Ollama AI local API</td></tr>
+</table>
+
+<!-- ──────────────────────────────────────────────────────────────────────── -->
+<h2 id="about">About</h2>
+<p>
+  <strong>AUDIS Enterprise SIP Manager</strong> — version 1.4<br>
+  &copy; 2026 Kybl Enterprise. All rights reserved.<br><br>
+  Built with:
+  <a href="https://github.com/sipsorcery-org/sipsorcery">SIPSorcery 8.0.3</a>,
+  <a href="https://github.com/sandrohanea/whisper.net">Whisper.net 1.7.1</a>,
+  .NET 8 WPF
+</p>
+
+<hr>
+<p style="font-size:11px;color:#606060">
+  This documentation is provided for informational purposes only.
+  Specifications are subject to change without notice.
+</p>
+
+</div>
+</body>
+</html>
